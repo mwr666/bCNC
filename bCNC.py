@@ -5,15 +5,13 @@
 # Author: vvlachoudis@gmail.com
 # Date: 24-Aug-2014
 
-__version__ = "0.9.8"
-__date__    = "15 Jan 2017"
+__version__ = "0.9.14"
+__date__    = "5 Feb 2018"
 __author__  = "Vasilis Vlachoudis"
 __email__   = "vvlachoudis@gmail.com"
 
 import os
-import re
 import sys
-import pdb
 import time
 import getopt
 import socket
@@ -29,13 +27,11 @@ try:
 	import Tkinter
 	from Queue import *
 	from Tkinter import *
-	import ConfigParser
 	import tkMessageBox
 except ImportError:
 	import tkinter
 	from queue import *
 	from tkinter import *
-	import configparser as ConfigParser
 	import tkinter.messagebox as tkMessageBox
 
 PRGPATH=os.path.abspath(os.path.dirname(__file__))
@@ -50,7 +46,6 @@ Utils.loadConfiguration()
 
 import rexx
 import tkExtra
-import Unicode
 import Updates
 import bFileDialog
 
@@ -59,21 +54,20 @@ import Ribbon
 import Pendant
 from Sender import Sender, NOT_CONNECTED, STATECOLOR, STATECOLORDEF
 
-import CNCList
 import CNCCanvas
 import webbrowser
 
-from CNCRibbon	  import Page
-from ToolsPage	  import Tools, ToolsPage
-from FilePage	  import FilePage
+from CNCRibbon    import Page
+from ToolsPage    import Tools, ToolsPage
+from FilePage     import FilePage
 from ControlPage  import ControlPage
 from TerminalPage import TerminalPage
-from ProbePage	  import ProbePage
+from ProbePage    import ProbePage
 from EditorPage   import EditorPage
 
 _openserial = True	# override ini parameters
 _device     = None
-_baud	    = None
+_baud       = None
 
 MONITOR_AFTER =  200	# ms
 DRAW_AFTER    =  300	# ms
@@ -293,6 +287,8 @@ class Application(Toplevel,Sender):
 
 		# Editor bindings
 		self.bind("<<Add>>",			self.editor.insertItem)
+		self.bind("<<AddBlock>>",		self.editor.insertBlock)
+		self.bind("<<AddLine>>",		self.editor.insertLine)
 		self.bind("<<Clone>>",			self.editor.clone)
 		self.canvas.bind("<Control-Key-Prior>",	self.editor.orderUp)
 		self.canvas.bind("<Control-Key-Next>",	self.editor.orderDown)
@@ -312,7 +308,7 @@ class Application(Toplevel,Sender):
 		self.bind('<<EnableToggle>>',	self.editor.toggleEnable)
 		self.bind('<<Enable>>',		self.editor.enable)
 		self.bind('<<Disable>>',	self.editor.disable)
-		self.bind('<<ChangeColor>>',self.editor.changeColor)
+		self.bind('<<ChangeColor>>',    self.editor.changeColor)
 
 		# Canvas X-bindings
 		self.bind("<<ViewChange>>",	self.viewChange)
@@ -374,7 +370,6 @@ class Application(Toplevel,Sender):
 		self.bind('<<ToolClone>>',	tools.clone)
 		self.bind('<<ToolRename>>',	tools.rename)
 
-		self.bind('<Home>',		self.home)
 		self.bind('<Prior>',		self.control.moveZup)
 		self.bind('<Next>',		self.control.moveZdown)
 
@@ -395,10 +390,8 @@ class Application(Toplevel,Sender):
 			self.bind('<Down>',		self.control.moveYdown)
 
 		try:
-			self.bind('<KP_Home>',	self.home)
-			self.bind('<KP_End>',	self.control.go2origin)
-			self.bind('<KP_Prior>',	self.control.moveZup)
-			self.bind('<KP_Next>',	self.control.moveZdown)
+			self.bind('<KP_Prior>',		self.control.moveZup)
+			self.bind('<KP_Next>',		self.control.moveZdown)
 
 			if self._swapKeyboard==1:
 				self.bind('<KP_Right>',	self.control.moveYup)
@@ -1232,6 +1225,9 @@ class Application(Toplevel,Sender):
 		if rexx.abbrev("ABOUT",cmd,3):
 			self.about()
 
+		elif rexx.abbrev("AUTOLEVEL",cmd,4):
+			self.executeOnSelection("AUTOLEVEL", True)
+
 		# CAM*ERA: camera actions
 		elif rexx.abbrev("CAMERA",cmd,3):
 			# FIXME will make crazy the button state
@@ -1666,7 +1662,9 @@ class Application(Toplevel,Sender):
 		self.busy()
 		sel = None
 		undoinfo = None	# all operations should return undo information
-		if   cmd == "CUT":
+		if   cmd == "AUTOLEVEL":
+			sel = self.gcode.autolevel(items)
+		elif cmd == "CUT":
 			sel = self.gcode.cut(items, *args)
 		elif cmd == "CLOSE":
 			sel = self.gcode.close(items)
@@ -1748,7 +1746,10 @@ class Application(Toplevel,Sender):
 	def pocket(self, name=None):
 		tool = self.tools["EndMill"]
 		diameter = self.tools.fromMm(tool["diameter"])
-		stepover = tool["stepover"] / 100.0
+		try:
+			stepover = tool["stepover"] / 100.0
+		except TypeError:
+			stepover = 0.
 
 		self.busy()
 		blocks = self.editor.getSelectedBlocks()
@@ -2079,7 +2080,6 @@ class Application(Toplevel,Sender):
 	# @return true if the compile has to abort
 	#-----------------------------------------------------------------------
 	def checkStop(self):
-		if self._stop: print "CHECK STOP"
 		try:
 			self.update()	# very tricky function of Tk
 		except TclError:
@@ -2152,14 +2152,21 @@ class Application(Toplevel,Sender):
 				return
 
 			# reset colors
-			for ij in self._paths:
+			before = time.time()
+			for ij in self._paths:	# Slow loop
 				if not ij: continue
 				path = self.gcode[ij[0]].path(ij[1])
 				if path:
-					self.canvas.itemconfig(
-						path,
-						width=1,
-						fill=CNCCanvas.ENABLE_COLOR)
+					color = self.canvas.itemcget(path, "fill")
+					if color != CNCCanvas.ENABLE_COLOR:
+						self.canvas.itemconfig(
+							path,
+							width=1,
+							fill=CNCCanvas.ENABLE_COLOR)
+					# Force a periodic update since this loop can take time
+					if time.time() - before > 0.25:
+						self.update()
+						before = time.time()
 
 			# the buffer of the machine should be empty?
 			self._runLines = len(self._paths) + 1	# plus the wait
@@ -2173,7 +2180,7 @@ class Application(Toplevel,Sender):
 						self.queue.put(line)
 					n += 1
 			self._runLines = n	# set it at the end to be sure that all lines are queued
-		self.queue.put((WAIT,))		# wait at the end fo become idle
+		self.queue.put((WAIT,))		# wait at the end to become idle
 
 		self.setStatus(_("Running..."))
 		self.statusbar.setLimits(0, self._runLines)
@@ -2397,7 +2404,8 @@ def usage(rc):
 	sys.stdout.write("\t-b # | --baud #\t\tSet the baud rate\n")
 	sys.stdout.write("\t-d\t\t\tEnable developer features\n")
 	sys.stdout.write("\t-D\t\t\tDisable developer features\n")
-	sys.stdout.write("\t-g #\t\tSet the default geometry\n")
+	sys.stdout.write("\t-f | --fullscreen\tEnable fullscreen mode\n")
+	sys.stdout.write("\t-g #\t\t\tSet the default geometry\n")
 	sys.stdout.write("\t-h | -? | --help\tThis help page\n")
 	sys.stdout.write("\t-i # | --ini #\t\tAlternative ini file for testing\n")
 	sys.stdout.write("\t-l | --list\t\tList all recently opened files\n")
@@ -2431,13 +2439,14 @@ if __name__ == "__main__":
 	# Parse arguments
 	try:
 		optlist, args = getopt.getopt(sys.argv[1:],
-			'?b:dDhi:g:rlpPSs:',
-			['help', 'ini=', 'recent', 'list','pendant=','serial=','baud=','run'])
+			'?b:dDfhi:g:rlpPSs:',
+			['help', 'ini=', 'fullscreen', 'recent', 'list','pendant=','serial=','baud=','run'])
 	except getopt.GetoptError:
 		usage(1)
 
-	recent	 = None
-	run	 = False
+	recent     = None
+	run        = False
+	fullscreen = False
 	for opt, val in optlist:
 		if opt in ("-h", "-?", "--help"):
 			usage(0)
@@ -2470,13 +2479,19 @@ if __name__ == "__main__":
 						r = 0
 			if r<0:
 				# display list of recent files
+				maxlen = 10
+				for i in range(Utils._maxRecent):
+					try: filename = Utils.getRecent(i)
+					except: continue
+					maxlen = max(maxlen, len(os.path.basename(filename)))
+
 				sys.stdout.write("Recent files:\n")
 				for i in range(Utils._maxRecent):
 					filename = Utils.getRecent(i)
 					if filename is None: break
 					d  = os.path.dirname(filename)
 					fn = os.path.basename(filename)
-					sys.stdout.write("  %2d: %-10s\t%s\n"%(i+1,fn,d))
+					sys.stdout.write("  %2d: %-*s  %s\n"%(i+1,maxlen,fn,d))
 
 				try:
 					sys.stdout.write("Select one: ")
@@ -2485,6 +2500,9 @@ if __name__ == "__main__":
 					pass
 			try: recent = Utils.getRecent(r)
 			except: pass
+
+		elif opt in ("-f", "--fullscreen"):
+			fullscreen = True
 
 		elif opt == "-S":
 			_openserial = False
@@ -2510,6 +2528,7 @@ if __name__ == "__main__":
 
 	# Start application
 	application = Application(tk)
+	if fullscreen: application.attributes("-fullscreen", True)
 
 	# Parse remaining arguments except files
 	if recent: args.append(recent)
@@ -2519,7 +2538,7 @@ if __name__ == "__main__":
 	if serial is None:
 		tkMessageBox.showerror(_("python serial missing"),
 			_("ERROR: Please install the python pyserial module\n" \
-			  "Windows:\n\tC:\PythonXX\Scripts\easy_install pyserial\n" \
+			  "Windows:\n\tC:\\PythonXX\\Scripts\\easy_install pyserial\n" \
 			  "Mac:\tpip install pyserial\n" \
 			  "Linux:\tsudo apt-get install python-serial\n" \
 			  "\tor yum install python-serial\n" \

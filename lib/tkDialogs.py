@@ -35,10 +35,8 @@
 __author__ = "Vasilis Vlachoudis"
 __email__  = "Vasilis.Vlachoudis@cern.ch"
 
-import os
 import sys
 import time
-import string
 import subprocess
 
 try:
@@ -554,13 +552,12 @@ class Printer(Toplevel):
 		if Printer.cmd.find("%p") == -1:
 			cmd = Printer.cmd + " -P %s"%(printer)
 		else:
-			cmd = string.replace(Printer.cmd,"%p","%s")%(printer)
+			cmd = Printer.cmd.replace("%p","%s")%(printer)
 
 		if cmd.find("%#") == -1:
 			cmd += " -# %d"%(Printer.copies)
 		else:
-			cmd = string.replace(cmd,"%#","%d") \
-				% (Printer.copies)
+			cmd = cmd.replace("%#","%d") % (Printer.copies)
 		#print "Printing command=\"%s\""%(cmd)
 		return cmd
 

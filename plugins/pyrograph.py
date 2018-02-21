@@ -11,8 +11,6 @@ __email__  = "f.rivato@gmail.com"
 __name__ = _("Pyrograph")
 __version__= "0.0.3"
 
-import math
-from bmath import Vector
 from CNC import CNC,Block
 from ToolsPage import Plugin
 
@@ -30,8 +28,7 @@ class Pyrograph:
 class Tool(Plugin):
 	__doc__ = _("Create a variable feed path based upon image brightness")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Pyrograph"
+		Plugin.__init__(self, master, "Pyrograph")
 		self.icon  = "pyrograph"
 		self.group = "Artistic"
 

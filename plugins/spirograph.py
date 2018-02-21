@@ -13,7 +13,6 @@ __name__ = _("Spirograph")
 __version__= "0.0.1"
 
 import math
-from bmath import Vector
 from CNC import CNC,Block
 from ToolsPage import Plugin
 from fractions import gcd
@@ -94,8 +93,7 @@ class Spirograph:
 class Tool(Plugin):
 	__doc__ = _("Create a spirograph path")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Spirograph"
+		Plugin.__init__(self, master, "Spirograph")
 		self.icon  = "spirograph"
 		self.group = "Artistic"
 		self.variables = [

@@ -17,15 +17,11 @@ __email__  = "f.rivato@gmail.com"
 __name__ = _("Heightmap")
 __version__= "0.0.1"
 
-from ToolsPage import DataBase
-
 import math
-from bmath import Vector
 from CNC import CNC,Block
 from ToolsPage import Plugin
 
 from imageToGcode import *
-import math
 
 #==============================================================================
 #Heightmap class
@@ -40,8 +36,7 @@ class Heightmap:
 class Tool(Plugin):
 	__doc__ = _("Use a brightess map to create a variable Z path")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Heightmap"
+		Plugin.__init__(self, master, "Heightmap")
 		self.icon  = "heightmap"
 		self.group = "Generator"
 

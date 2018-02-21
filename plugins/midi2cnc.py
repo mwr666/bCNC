@@ -12,10 +12,7 @@ __email__  = "f.rivato@gmail.com"
 __name__ = "Midi2CNC"
 __version__= "0.0.1"
 
-from ToolsPage import DataBase
-
 import math
-from bmath import Vector
 from CNC import CNC,Block
 from ToolsPage import Plugin
 
@@ -32,8 +29,7 @@ class Midi2CNC:
 class Tool(Plugin):
 	__doc__ = _("Sound your machine from a midi file")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Midi2CNC"
+		Plugin.__init__(self, master, "Midi2CNC")
 		self.icon  = "midi2cnc"
 		self.group = "Artistic"
 

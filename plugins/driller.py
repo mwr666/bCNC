@@ -13,7 +13,6 @@ __name__ = _("Driller")
 __version__= "0.0.7"
 
 import math
-from bmath import Vector
 from CNC import CNC,Block
 from ToolsPage import Plugin
 
@@ -30,8 +29,7 @@ class Driller:
 class Tool(Plugin):
 	__doc__ = _("Create holes along selected blocks")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Driller"
+		Plugin.__init__(self, master, "Driller")
 		self.icon  = "driller"
 		self.group = "CAM"
 
@@ -107,8 +105,6 @@ class Tool(Plugin):
 		targetDepth = self.fromMm("TargetDepth")
 		peck = self.fromMm("Peck")
 		dwell = self["Dwell"]
-
-		zSafe = CNC.vars["safe"]
 
 		#Check inputs
 		if holesDistance <=0:
@@ -198,14 +194,14 @@ class Tool(Plugin):
 
 			for xH,yH,zH in bid:
 				holesCount += 1
-				block.append(CNC.grapid(None,None,zH + zSafe))
+				block.append(CNC.zsafe())
 				block.append(CNC.grapid(xH,yH))
 				if (peck != 0) :
 					z = 0
 					while z > targetDepth:
 							z = max(z-peck, targetDepth)
 							block.append(CNC.zenter(zH + z))
-							block.append(CNC.grapid(None,None,zH + zSafe))
+							block.append(CNC.zsafe())
 				block.append(CNC.zenter(zH + targetDepth))
 				#dwell time only on last pass
 				if dwell != 0:

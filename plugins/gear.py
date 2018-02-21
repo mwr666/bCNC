@@ -12,7 +12,7 @@ __name__ = _("Gear")
 
 import math
 from bmath import Vector
-from CNC import CW,CCW,CNC,Block
+from CNC import CW,CNC,Block
 from ToolsPage import Plugin
 
 #==============================================================================
@@ -156,8 +156,7 @@ class Gear:
 class Tool(Plugin):
 	__doc__ = _("Generate a spur gear")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Gear"
+		Plugin.__init__(self, master, "Gear")
 		self.icon  = "gear"
 		self.group = "Generator"
 		self.variables = [

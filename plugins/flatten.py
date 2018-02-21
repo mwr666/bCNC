@@ -11,7 +11,6 @@ __email__  = "f.rivato@gmail.com"
 __name__ = _("Flatten")
 __version__= "0.0.2"
 
-import math
 from CNC import CNC,Block
 from ToolsPage import Plugin
 
@@ -248,8 +247,7 @@ class Flatten:
 class Tool(Plugin):
 	__doc__ = _("Flatten an area in different ways")
 	def __init__(self, master):
-		Plugin.__init__(self, master)
-		self.name  = "Flatten"
+		Plugin.__init__(self, master, "Flatten")
 		self.icon  = "flatten"
 		self.group = "CAM"
 		self.variables = [

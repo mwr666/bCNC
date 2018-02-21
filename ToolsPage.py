@@ -39,9 +39,9 @@ class InPlaceText(tkExtra.InPlaceText):
 # Tools Base class
 #==============================================================================
 class _Base:
-	def __init__(self, master):
+	def __init__(self, master, name=None):
 		self.master    = master
-		self.name      = None
+		self.name      = name
 		self.icon      = None
 		self.plugin    = False
 		self.variables = []		# name, type, default, label
@@ -140,7 +140,7 @@ class _Base:
 
 			if t=="color":
 				try:
-					self.master.listbox.lists[1].itemconfig(END, background=value)
+					self.master.listbox.listbox(1).itemconfig(END, background=value)
 				except TclError:
 					pass
 
@@ -183,7 +183,7 @@ class _Base:
 	# Edit tool listbox
 	#----------------------------------------------------------------------
 	def edit(self, event=None, rename=False):
-		lb = self.master.listbox.lists[1]
+		lb = self.master.listbox.listbox(1)
 		if event is None or event.type=="2":
 			keyboard = True
 		else:
@@ -374,8 +374,8 @@ class _Base:
 # Base class of all databases
 #==============================================================================
 class DataBase(_Base):
-	def __init__(self, master):
-		_Base.__init__(self, master)
+	def __init__(self, master, name):
+		_Base.__init__(self, master, name)
 		self.buttons  = ["add","delete","clone","rename"]
 
 	# ----------------------------------------------------------------------
@@ -440,8 +440,8 @@ class DataBase(_Base):
 
 #==============================================================================
 class Plugin(DataBase):
-	def __init__(self, master):
-		DataBase.__init__(self, master)
+	def __init__(self, master, name):
+		DataBase.__init__(self, master, name)
 		self.plugin = True
 		self.group  = "Macros"
 
@@ -449,13 +449,13 @@ class Plugin(DataBase):
 # Generic ini configuration
 #==============================================================================
 class Ini(_Base):
-	def __init__(self, master, name, vartype):
+	def __init__(self, master, name, vartype, include=(), ignore=()):
 		_Base.__init__(self, master)
 		self.name = name
 
 		# detect variables from ini file
-		self.variables = []
 		for name,value in Utils.config.items(self.name):
+			if name in ignore: continue
 			self.variables.append((name, vartype, value, name))
 
 #------------------------------------------------------------------------------
@@ -469,25 +469,73 @@ class Color(Ini):
 		Ini.__init__(self, master, "Color", "color")
 
 #------------------------------------------------------------------------------
-class Camera(Ini):
-	def __init__(self, master):
-		Ini.__init__(self, master, "Camera", "int")
-
-#------------------------------------------------------------------------------
 class Events(Ini):
 	def __init__(self, master):
 		Ini.__init__(self, master, "Events", "str")
 
 #------------------------------------------------------------------------------
-class Shortcut(Ini):
+class Shortcut(_Base):
 	def __init__(self, master):
-		Ini.__init__(self, master, "Shortcut", "str")
+		_Base.__init__(self, master, "Shortcut")
+		self.variables = [
+			("F1",		"str",	"help"	, _("F1")),
+			("F2",		"str",	"edit"	, _("F2")),
+			("F3",		"str",	"XY"	, _("F3")),
+			("F4",		"str",	"ISO1"	, _("F4")),
+			("F5",		"str",	"ISO2"	, _("F5")),
+			("F6",		"str",	"ISO3"	, _("F6")),
+			("F7",		"str",	""	, _("F7")),
+			("F8",		"str",	""	, _("F8")),
+			("F9",		"str",	""	, _("F9")),
+			("F10",		"str",	""	, _("F10")),
+			("F11",		"str",	""	, _("F11")),
+			("F12",		"str",	""	, _("F12")),
+			("Shift-F1",	"str",	""	, _("Shift-") + _("F1")),
+			("Shift-F2",	"str",	""	, _("Shift-") + _("F2")),
+			("Shift-F3",	"str",	""	, _("Shift-") + _("F3")),
+			("Shift-F4",	"str",	""	, _("Shift-") + _("F4")),
+			("Shift-F5",	"str",	""	, _("Shift-") + _("F5")),
+			("Shift-F6",	"str",	""	, _("Shift-") + _("F6")),
+			("Shift-F7",	"str",	""	, _("Shift-") + _("F7")),
+			("Shift-F8",	"str",	""	, _("Shift-") + _("F8")),
+			("Shift-F9",	"str",	""	, _("Shift-") + _("F9")),
+			("Shift-F10",	"str",	""	, _("Shift-") + _("F10")),
+			("Shift-F11",	"str",	""	, _("Shift-") + _("F11")),
+			("Shift-F12",	"str",	""	, _("Shift-") + _("F12")),
+			("Control-F1",	"str",	""	, _("Control-") + _("F1")),
+			("Control-F2",	"str",	""	, _("Control-") + _("F2")),
+			("Control-F3",	"str",	""	, _("Control-") + _("F3")),
+			("Control-F4",	"str",	""	, _("Control-") + _("F4")),
+			("Control-F5",	"str",	""	, _("Control-") + _("F5")),
+			("Control-F6",	"str",	""	, _("Control-") + _("F6")),
+			("Control-F7",	"str",	""	, _("Control-") + _("F7")),
+			("Control-F8",	"str",	""	, _("Control-") + _("F8")),
+			("Control-F9",	"str",	""	, _("Control-") + _("F9")),
+			("Control-F10",	"str",	""	, _("Control-") + _("F10")),
+			("Control-F11",	"str",	""	, _("Control-") + _("F11")),
+			("Control-F12",	"str",	""	, _("Control-") + _("F12"))
+		]
 		self.buttons.append("exe")
 
 	#----------------------------------------------------------------------
 	def execute(self, app):
 		self.save()
 		app.loadShortcuts()
+
+#------------------------------------------------------------------------------
+class Camera(_Base):
+	def __init__(self, master):
+		_Base.__init__(self, master, "Camera")
+		self.variables = [
+			("aligncam"      , "int",  0    , _("Align Camera"))   ,
+			("aligncam_width", "int",  0    , _("Align Camera Width")),
+			("aligncam_height","int",  0    , _("Align Camera Height")),
+			("aligncam_angle", "0,90,180,270", 0, _("Align Camera Angle")),
+			("webcam"      , "int",  0    , _("Web Camera"))   ,
+			("webcam_width", "int",  0    , _("Web Camera Width")),
+			("webcam_height","int",  0    , _("Web Camera Height")),
+			("webcam_angle", "0,90,180,270", 0, _("Web Camera Angle"))
+		]
 
 #==============================================================================
 # CNC machine configuration
@@ -498,7 +546,8 @@ class Config(_Base):
 		self.name = "CNC"
 		self.variables = [
 			("units"         , "bool", 0    , _("Units (inches)"))   ,
-			("lasercutter"   , "bool", 0    , _("Lasercutter"))   ,
+			("lasercutter"   , "bool", 0    , _("Laser Cutter"))   ,
+			("laseradaptive" , "bool", 0    , _("Laser Adaptive Power"))   ,
 			("doublesizeicon", "bool", 0    , _("Double Size Icon"))   ,
 			("acceleration_x", "mm"  , 25.0 , _("Acceleration x"))   ,
 			("acceleration_y", "mm"  , 25.0 , _("Acceleration y"))   ,
@@ -536,8 +585,7 @@ class Config(_Base):
 #==============================================================================
 class Material(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Material"
+		DataBase.__init__(self, master, "Material")
 		self.variables = [
 			("name",    "db",    "", _("Name")),
 			("comment","str",    "", _("Comment")),
@@ -563,8 +611,7 @@ class Material(DataBase):
 #==============================================================================
 class EndMill(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "EndMill"
+		DataBase.__init__(self, master, "EndMill")
 		self.variables = [
 			("name",       "db",     "", _("Name")),
 			("comment",   "str",     "", _("Comment")),
@@ -593,8 +640,7 @@ class EndMill(DataBase):
 #==============================================================================
 class Stock(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Stock"
+		DataBase.__init__(self, master, "Stock")
 		self.variables = [
 			("name",      "db" ,    "", _("Name")),
 			("comment",  "str",     "", _("Comment")),
@@ -620,8 +666,7 @@ class Stock(DataBase):
 #==============================================================================
 class Cut(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Cut"
+		DataBase.__init__(self, master, "Cut")
 		self.variables = [
 			("name",         "db" ,    "", _("Name")),
 			("surface",      "mm" ,    "", _("Surface Z")),
@@ -651,8 +696,7 @@ class Cut(DataBase):
 #==============================================================================
 class Drill(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Drill"
+		DataBase.__init__(self, master, "Drill")
 		self.variables = [
 			("name",      "db" ,    "", _("Name")),
 			("depth",     "mm" ,    "", _("Target Depth")),
@@ -684,8 +728,7 @@ class Drill(DataBase):
 #==============================================================================
 class Profile(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Profile"
+		DataBase.__init__(self, master, "Profile")
 		self.variables = [
 			("name",      "db" ,    "", _("Name")),
 			("endmill",   "db" ,    "", _("End Mill")),
@@ -710,8 +753,7 @@ class Profile(DataBase):
 #==============================================================================
 class Pocket(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Pocket"
+		DataBase.__init__(self, master, "Pocket")
 		self.variables = [
 			("name",      "db" ,    "", _("Name")),
 			("endmill",   "db" ,    "", _("End Mill")),
@@ -732,8 +774,7 @@ class Pocket(DataBase):
 #==============================================================================
 class Tabs(DataBase):
 	def __init__(self, master):
-		DataBase.__init__(self, master)
-		self.name = "Tabs"
+		DataBase.__init__(self, master, "Tabs")
 		self.variables = [
 			("name",      "db" ,    "", _("Name")),
 			("ntabs",     "int",     5, _("Number of tabs")),
@@ -776,38 +817,38 @@ class Controller(_Base):
 		self.variables = [
 			("grbl_0",   "int",     10,     _("$0 Step pulse time [us]")),
 			("grbl_1",   "int",     25,     _("$1 Step idle delay [ms]")),
-			("grbl_2",   "int",      0,     _("$2 Step pulse invert [mask]")),
-			("grbl_3",   "int",      0,     _("$3 Step direction invert [mask]")),
-			("grbl_4",   "bool",     0,     _("$4 Invert step enable pin")),
-			("grbl_5",   "bool",     0,     _("$5 Invert limit pins")),
-			("grbl_6",   "bool",     0,     _("$6 Invert probe pin")),
-			("grbl_10",  "int",      1,     _("$10 Status report options [mask]")),
+			("grbl_2",   "int",      0,     _("$2 Step port invert [mask]")),
+			("grbl_3",   "int",      0,     _("$3 Direction port invert [mask]")),
+			("grbl_4",   "bool",     0,     _("$4 Step enable invert")),
+			("grbl_5",   "bool",     0,     _("$5 Limit pins invert")),
+			("grbl_6",   "bool",     0,     _("$6 Probe pin invert")),
+			("grbl_10",  "int",      1,     _("$10 Status report [mask]")),
 			("grbl_11",  "float",    0.010, _("$11 Junction deviation [mm]")),
 			("grbl_12",  "float",    0.002, _("$12 Arc tolerance [mm]")),
-			("grbl_13",  "bool",     0,     _("$13 Report in inches")),
-			("grbl_20",  "bool",     0,     _("$20 Soft limits enable")),
-			("grbl_21",  "bool",     0,     _("$21 Hard limits enable")),
-			("grbl_22",  "bool",     0,     _("$22 Homing cycle enable")),
+			("grbl_13",  "bool",     0,     _("$13 Report inches")),
+			("grbl_20",  "bool",     0,     _("$20 Soft limits")),
+			("grbl_21",  "bool",     0,     _("$21 Hard limits")),
+			("grbl_22",  "bool",     0,     _("$22 Homing cycle")),
 			("grbl_23",  "int",      0,     _("$23 Homing direction invert [mask]")),
-			("grbl_24",  "float",   25.,    _("$24 Homing locate feed rate [mm/min]")),
-			("grbl_25",  "float",  500.,    _("$25 Homing search seek rate [mm/min]")),
-			("grbl_26",  "int",    250,     _("$26 Homing switch debounce delay, ms")),
-			("grbl_27",  "float",    1.,    _("$27 Homing switch pull-off distance [mm]")),
-			("grbl_30",  "float", 1000.,    _("$30 Maximum spindle speed [RPM]")),
-			("grbl_31",  "float",    0.,    _("$31 Minimum spindle speed [RPM]")),
-			("grbl_32",  "bool",     0,     _("$32 Laser-mode enable")),
-			("grbl_100", "float",  250.,    _("$100 X-axis steps per mm")),
-			("grbl_101", "float",  250.,    _("$101 Y-axis steps per mm")),
-			("grbl_102", "float",  250.,    _("$102 Z-axis steps per mm")),
-			("grbl_110", "float",  500.,    _("$110 X-axis maximum rate [mm/min]")),
-			("grbl_111", "float",  500.,    _("$111 Y-axis maximum rate [mm/min]")),
-			("grbl_112", "float",  500.,    _("$112 Z-axis maximum rate [mm/min]")),
-			("grbl_120", "float",   10.,    _("$120 X-axis acceleration [mm/sec^2]")),
-			("grbl_121", "float",   10.,    _("$121 Y-axis acceleration [mm/sec^2]")),
-			("grbl_122", "float",   10.,    _("$122 Z-axis acceleration [mm/sec^2]")),
-			("grbl_130", "float",  200.,    _("$130 X-axis maximum travel [mm]")),
-			("grbl_131", "float",  200.,    _("$131 Y-axis maximum travel [mm]")),
-			("grbl_132", "float",  200.,    _("$132 Z-axis maximum travel [mm]"))]
+			("grbl_24",  "float",   25.,    _("$24 Homing feed [mm/min]")),
+			("grbl_25",  "float",  500.,    _("$25 Homing seek [mm/min]")),
+			("grbl_26",  "int",    250,     _("$26 Homing debounce [ms]")),
+			("grbl_27",  "float",    1.,    _("$27 Homing pull-off [mm]")),
+			("grbl_30",  "float", 1000.,    _("$30 Max spindle speed [RPM]")),
+			("grbl_31",  "float",    0.,    _("$31 Min spindle speed [RPM]")),
+			("grbl_32",  "bool",     0,     _("$32 Laser mode enable")),
+			("grbl_100", "float",  250.,    _("$100 X steps/mm")),
+			("grbl_101", "float",  250.,    _("$101 Y steps/mm")),
+			("grbl_102", "float",  250.,    _("$102 Z steps/mm")),
+			("grbl_110", "float",  500.,    _("$110 X max rate [mm/min]")),
+			("grbl_111", "float",  500.,    _("$111 Y max rate [mm/min]")),
+			("grbl_112", "float",  500.,    _("$112 Z max rate [mm/min]")),
+			("grbl_120", "float",   10.,    _("$120 X acceleration [mm/sec^2]")),
+			("grbl_121", "float",   10.,    _("$121 Y acceleration [mm/sec^2]")),
+			("grbl_122", "float",   10.,    _("$122 Z acceleration [mm/sec^2]")),
+			("grbl_130", "float",  200.,    _("$130 X max travel [mm]")),
+			("grbl_131", "float",  200.,    _("$131 Y max travel [mm]")),
+			("grbl_132", "float",  200.,    _("$132 Z max travel [mm]"))]
 		self.buttons.append("exe")
 
 	# ----------------------------------------------------------------------
@@ -859,9 +900,9 @@ class Tools:
 		self.listbox = None
 
 		# CNC should be first to load the inches
-		for cls in [ Config, Font, Color, Controller, Cut, Drill, EndMill, Events,
-			     Material, Pocket, Profile, Shortcut, Stock,
-			     Tabs]:
+		for cls in [ Camera, Config, Font, Color, Controller, Cut,
+			     Drill, EndMill, Events, Material, Pocket,
+			     Profile, Shortcut, Stock, Tabs]:
 			tool = cls(self)
 			self.addTool(tool)
 
@@ -1415,7 +1456,7 @@ class ToolsFrame(CNCRibbon.PageFrame):
 		self.toolList.bindList("<Key-space>",	self.edit)
 #		self.toolList.bindList("<Key-space>",	self.commandFocus)
 #		self.toolList.bindList("<Control-Key-space>",	self.commandFocus)
-		self.toolList.lists[1].bind("<ButtonRelease-1>", self.edit)
+		self.toolList.listbox(1).bind("<ButtonRelease-1>", self.edit)
 		self.tools.setListbox(self.toolList)
 		self.addWidget(self.toolList)
 
